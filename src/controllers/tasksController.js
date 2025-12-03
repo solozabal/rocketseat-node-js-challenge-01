@@ -10,15 +10,15 @@ async function createTask(req, res) {
     const title = trimString(req.body.title);
     const description = trimString(req.body.description);
 
-    if (!title || !description) {
-      return res.status(400).json({ error: 'title and description are required' });
+    if (!title) {
+      return res.status(400).json({ error: 'title is required' });
     }
 
     const id = crypto.randomUUID();
     await db.run(
       `INSERT INTO tasks (id, title, description, completed_at, created_at, updated_at)
        VALUES (?, ?, ?, NULL, datetime('now'), datetime('now'))`,
-      [id, title, description]
+      [id, title, description || null]
     );
 
     const task = await db.get('SELECT * FROM tasks WHERE id = ?', [id]);
