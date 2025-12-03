@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    environment:
+      NODE_ENV: development
