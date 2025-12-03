@@ -35,7 +35,7 @@ async function getTasks(req, res) {
     if (search) {
       const q = `%${search}%`;
       const rows = await db.all(
-        `SELECT * FROM tasks WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC`,
+        `SELECT * FROM tasks WHERE title LIKE ? OR (description IS NOT NULL AND description LIKE ?) ORDER BY created_at DESC`,
         [q, q]
       );
       return res.status(200).json(rows);
