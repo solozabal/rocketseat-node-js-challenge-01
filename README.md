@@ -186,16 +186,41 @@ Behavior:
 
 ---
 
-## 🧪 Testing (Suggestion)
+## 🧪 Testing
 
-- Framework: Vitest or Jest
-- Integration tests for core routes (`/tasks`, `/health`)
-- In-memory SQLite for DB mocks
+The project includes comprehensive unit and integration tests using Jest and Supertest.
 
-Example (pseudo):
+### Running Tests
+
+**Locally (with test database):**
 ```bash
-npm run test
+SQLITE_DB_FILE=/tmp/test-database.sqlite NODE_ENV=test npm test
 ```
+
+**Inside Docker container:**
+```bash
+docker-compose run --rm -e NODE_ENV=test -e SQLITE_DB_FILE=/tmp/test-database.sqlite api npm test
+```
+
+### Test Coverage
+
+- **Unit Tests** (`tests/unit/tasksController.spec.js`):
+  - Title validation (required, non-empty after trim)
+  - Update body validation (at least one of title or description)
+  - Toggle behavior for completed_at (set when null, unset when set)
+
+- **Integration Tests** (`tests/integration/tasks.integration.spec.js`):
+  - POST `/tasks` - creates tasks and validates input (201, 400)
+  - GET `/tasks` - lists tasks and filters with ?search
+  - PUT `/tasks/:id` - updates tasks and validates body (200, 400, 404)
+  - PATCH `/tasks/:id/complete` - toggles completed_at (200, 404)
+  - DELETE `/tasks/:id` - removes tasks (204, 404)
+
+### Test Configuration
+
+- Sequential execution (`maxWorkers: 1`) to avoid SQLite concurrency issues
+- Test isolation via `SQLITE_DB_FILE` environment variable
+- Automatic test database cleanup between tests
 
 ---
 

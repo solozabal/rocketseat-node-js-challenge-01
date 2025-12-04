@@ -5,3 +5,5 @@ npm-debug.log
 /data/*.db
 /docker-output
 .github/copilot-instructions.md
+/tmp/*.sqlite
+coverage/
