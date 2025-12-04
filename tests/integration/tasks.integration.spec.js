@@ -1,6 +1,7 @@
 const request = require('supertest');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 // Helper to get API client - tries to use app directly, falls back to BASE_URL
 function apiClient() {
@@ -13,8 +14,8 @@ function apiClient() {
   }
 }
 
-// Set up test database
-const TEST_DB_PATH = process.env.SQLITE_DB_FILE || '/tmp/test-database.sqlite';
+// Set up test database - use OS temp directory for cross-platform compatibility
+const TEST_DB_PATH = process.env.SQLITE_DB_FILE || path.join(os.tmpdir(), 'test-database.sqlite');
 
 describe('Tasks Integration Tests', () => {
   let api;
