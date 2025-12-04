@@ -12,12 +12,13 @@ Focus areas: CRUD operations, mark task as complete, and bulk import via CSV upl
 
 ## ✨ Highlights
 
-- Lean, fast Node.js API (ES Modules)
+- Lean, fast Node.js API (CommonJS)
 - Lightweight persistence using SQLite
 - Reproducible environment via Docker Compose
 - Bulk task import through CSV file upload
 - Health and observability: `/health` endpoint
 - Clean structure, ready for testing
+- Jest + Supertest test suite covering validations and all `/tasks` endpoints
 
 ---
 
@@ -26,12 +27,20 @@ Focus areas: CRUD operations, mark task as complete, and bulk import via CSV upl
 ```text
 .
 ├─ src/
-│  ├─ server.js         # HTTP entrypoint
+│  ├─ server.js         # HTTP entrypoint (starts app.listen)
+│  ├─ app.js            # Express app (imported by server)
 │  ├─ routes/           # Route definitions
 │  ├─ controllers/      # Business orchestration
 │  ├─ repositories/     # Database access (SQLite)
-│  └─ utils/            # Helpers and validations
-├─ data/                # Persisted SQLite database (bind with Docker)
+│  └─ database/
+│     ├─ db.js          # SQLite connection + schema bootstrap
+│     └─ init.sql       # Schema
+├─ tests/
+│  ├─ unit/
+│  │  └─ tasksController.spec.js
+│  └─ integration/
+│     └─ tasks.integration.spec.js
+├─ jest.config.cjs      # Jest config (Node, sequential)
 ├─ docker-compose.yml
 ├─ Dockerfile
 └─ README.md
@@ -188,39 +197,48 @@ Behavior:
 
 ## 🧪 Testing
 
-The project includes comprehensive unit and integration tests using Jest and Supertest.
+The project includes 30 tests (unit + integration) using Jest and Supertest. Tests run sequentially to avoid SQLite concurrency issues.
 
-### Running Tests
+- Frameworks:
+  - Jest (unit and integration)
+  - Supertest (HTTP integration)
 
-**Locally (with test database):**
+- Test files:
+  - Unit: `tests/unit/tasksController.spec.js`
+    - Validates title requirement (trim, non-empty)
+    - Validates update body must contain `title` or `description`
+    - Simulates `completed_at` toggle behavior
+  - Integration: `tests/integration/tasks.integration.spec.js`
+    - Covers endpoints: POST, GET (with `?search`), PUT, PATCH `/complete`, DELETE
+    - Error cases: 400 (invalid body), 404 (not found)
+
+- How tests work:
+  - If `src/app.js` exports the Express app, Supertest uses it directly.
+  - If not, tests fallback to `http://localhost:3000`. In this case, start the dev server before running tests.
+
+### Run tests locally (recommended: isolated DB)
+
+Use an isolated SQLite file via env var to ensure clean state per run:
+
 ```bash
 SQLITE_DB_FILE=/tmp/test-database.sqlite NODE_ENV=test npm test
 ```
 
-**Inside Docker container:**
+This sets the database file to `/tmp/test-database.sqlite` only for the test process. No repo files are created.
+
+### Run tests with Docker Compose (optional)
+
 ```bash
-docker-compose run --rm -e NODE_ENV=test -e SQLITE_DB_FILE=/tmp/test-database.sqlite api npm test
+docker compose run --rm \
+  -e NODE_ENV=test \
+  -e SQLITE_DB_FILE=/tmp/test-database.sqlite \
+  api npm test
 ```
 
-### Test Coverage
+### Notes
 
-- **Unit Tests** (`tests/unit/tasksController.spec.js`):
-  - Title validation (required, non-empty after trim)
-  - Update body validation (at least one of title or description)
-  - Toggle behavior for completed_at (set when null, unset when set)
-
-- **Integration Tests** (`tests/integration/tasks.integration.spec.js`):
-  - POST `/tasks` - creates tasks and validates input (201, 400)
-  - GET `/tasks` - lists tasks and filters with ?search
-  - PUT `/tasks/:id` - updates tasks and validates body (200, 400, 404)
-  - PATCH `/tasks/:id/complete` - toggles completed_at (200, 404)
-  - DELETE `/tasks/:id` - removes tasks (204, 404)
-
-### Test Configuration
-
-- Sequential execution (`maxWorkers: 1`) to avoid SQLite concurrency issues
-- Test isolation via `SQLITE_DB_FILE` environment variable
-- Automatic test database cleanup between tests
+- Tests execute sequentially (`jest --runInBand` / `maxWorkers: 1`) to avoid sqlite contention.
+- If an intermittent failure appears due to sqlite locks, ensure the isolated DB path is used and re-run.
 
 ---
 
@@ -246,13 +264,16 @@ npm run format
 
 # Dev (hot reload)
 npm run dev
+
+# Test (sequential; isolated DB recommended)
+SQLITE_DB_FILE=/tmp/test-database.sqlite NODE_ENV=test npm test
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Integration and contract tests
+- [ ] Integration and contract tests (extended coverage, CI)
 - [ ] Rate limiting and configurable CORS
 - [ ] Observability (structured logs, Prometheus metrics)
 - [ ] OpenAPI/Swagger documentation
