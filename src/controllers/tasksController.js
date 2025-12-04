@@ -6,25 +6,33 @@ function trimString(value) {
   return typeof value === 'string' ? value.trim() : value;
 }
 
+// Helper function to insert a task into the database
+async function insertTask(title, description) {
+  const trimmedTitle = trimString(title);
+  const trimmedDescription = trimString(description);
+
+  if (!trimmedTitle) {
+    throw new Error('title is required');
+  }
+
+  const id = crypto.randomUUID();
+  await db.run(
+    `INSERT INTO tasks (id, title, description, completed_at, created_at, updated_at)
+     VALUES (?, ?, ?, NULL, datetime('now'), datetime('now'))`,
+    [id, trimmedTitle, trimmedDescription || null]
+  );
+
+  return await db.get('SELECT * FROM tasks WHERE id = ?', [id]);
+}
+
 async function createTask(req, res) {
   try {
-    const title = trimString(req.body.title);
-    const description = trimString(req.body.description);
-
-    if (!title) {
-      return res.status(400).json({ error: 'title is required' });
-    }
-
-    const id = crypto.randomUUID();
-    await db.run(
-      `INSERT INTO tasks (id, title, description, completed_at, created_at, updated_at)
-       VALUES (?, ?, ?, NULL, datetime('now'), datetime('now'))`,
-      [id, title, description || null]
-    );
-
-    const task = await db.get('SELECT * FROM tasks WHERE id = ?', [id]);
+    const task = await insertTask(req.body.title, req.body.description);
     return res.status(201).json(task);
   } catch (error) {
+    if (error.message === 'title is required') {
+      return res.status(400).json({ error: error.message });
+    }
     console.error('createTask error', error.message);
     return res.status(500).json({ error: 'internal server error' });
   }
@@ -130,8 +138,9 @@ async function importTasks(req, res) {
       errors: []
     };
 
-    return new Promise((resolve) => {
-      const records = [];
+    // Parse CSV with a promise-based approach
+    const records = await new Promise((resolve, reject) => {
+      const results = [];
       const parser = parse(fileBuffer, {
         columns: true,
         skip_empty_lines: true,
@@ -142,57 +151,44 @@ async function importTasks(req, res) {
       parser.on('readable', function() {
         let record;
         while ((record = parser.read()) !== null) {
-          records.push(record);
+          results.push(record);
         }
       });
 
       parser.on('error', function(err) {
-        console.error('CSV parse error', err.message);
-        resolve(res.status(400).json({ error: 'invalid CSV format' }));
+        reject(err);
       });
 
-      parser.on('end', async function() {
-        stats.totalLines = records.length;
-
-        for (let i = 0; i < records.length; i++) {
-          const lineNumber = i + 2; // +2 because line 1 is header, and we start at index 0
-          const record = records[i];
-
-          try {
-            const title = trimString(record.title);
-            const description = trimString(record.description);
-
-            if (!title) {
-              stats.failed++;
-              stats.errors.push({
-                line: lineNumber,
-                error: 'title is required'
-              });
-              continue;
-            }
-
-            const id = crypto.randomUUID();
-            await db.run(
-              `INSERT INTO tasks (id, title, description, completed_at, created_at, updated_at)
-               VALUES (?, ?, ?, NULL, datetime('now'), datetime('now'))`,
-              [id, title, description || null]
-            );
-
-            stats.imported++;
-          } catch (error) {
-            stats.failed++;
-            stats.errors.push({
-              line: lineNumber,
-              error: error.message
-            });
-          }
-        }
-
-        resolve(res.status(200).json(stats));
+      parser.on('end', function() {
+        resolve(results);
       });
     });
+
+    stats.totalLines = records.length;
+
+    // Process each record
+    for (let i = 0; i < records.length; i++) {
+      const lineNumber = i + 2; // +2 because line 1 is header, and we start at index 0
+      const record = records[i];
+
+      try {
+        await insertTask(record.title, record.description);
+        stats.imported++;
+      } catch (error) {
+        stats.failed++;
+        stats.errors.push({
+          line: lineNumber,
+          error: error.message
+        });
+      }
+    }
+
+    return res.status(200).json(stats);
   } catch (error) {
-    console.error('importTasks error', error.message);
+    if (error.message) {
+      console.error('importTasks error', error.message);
+      return res.status(400).json({ error: 'invalid CSV format' });
+    }
     return res.status(500).json({ error: 'internal server error' });
   }
 }
