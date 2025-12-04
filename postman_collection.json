@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "Task API",
+    "description": "Task management API with CRUD operations and CSV import",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["health"]
+        },
+        "description": "Check if the API is running"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Task",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Learn Node.js\",\n  \"description\": \"Study Node.js fundamentals and best practices\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/tasks",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["tasks"]
+        },
+        "description": "Create a new task with title and optional description"
+      },
+      "response": []
+    },
+    {
+      "name": "List All Tasks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/tasks",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["tasks"]
+        },
+        "description": "List all tasks"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Tasks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/tasks?search=Node",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["tasks"],
+          "query": [
+            {
+              "key": "search",
+              "value": "Node",
+              "description": "Search term to filter tasks by title or description"
+            }
+          ]
+        },
+        "description": "Search tasks by title or description"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Task",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Master Node.js\",\n  \"description\": \"Advanced Node.js patterns and architecture\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/tasks/:id",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["tasks", ":id"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "replace-with-task-id",
+              "description": "Task ID"
+            }
+          ]
+        },
+        "description": "Update task title and/or description"
+      },
+      "response": []
+    },
+    {
+      "name": "Toggle Task Completion",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/tasks/:id/complete",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["tasks", ":id", "complete"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "replace-with-task-id",
+              "description": "Task ID"
+            }
+          ]
+        },
+        "description": "Toggle task completion status"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Task",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/tasks/:id",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["tasks", ":id"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "replace-with-task-id",
+              "description": "Task ID"
+            }
+          ]
+        },
+        "description": "Delete a task"
+      },
+      "response": []
+    },
+    {
+      "name": "Import Tasks from CSV",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "CSV file with columns: title, description"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:3000/tasks/import",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["tasks", "import"]
+        },
+        "description": "Import tasks from a CSV file. CSV must have columns 'title' and 'description'. Maximum file size: 5MB."
+      },
+      "response": []
+    }
+  ]
+}

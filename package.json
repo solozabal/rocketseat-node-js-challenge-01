@@ -6,14 +6,20 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "echo \"No tests specified\""
+    "test": "jest --runInBand"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "csv-parse": "^6.1.0",
     "express": "^4.19.2",
+    "multer": "^2.0.2",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
   },
   "engines": {
     "node": ">=22.0.0"

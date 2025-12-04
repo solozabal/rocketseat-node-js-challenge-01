@@ -1,61 +1,70 @@
-# Task API
+<h1 align="center">🚀 Task API</h1>
+<p align="center">
+  A lean Node.js API for task management — containerized with Docker, backed by SQLite, fully tested, and featuring bulk CSV import.
+</p>
 
-A Node.js API for task management, containerized with Docker and backed by SQLite storage.
-Focus areas: CRUD operations, mark task as complete, and bulk import via CSV upload.
-
-[![Node.js](https://img.shields.io/badge/Node.js-22+-3C873A?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![npm](https://img.shields.io/badge/npm-10+-CB0000?logo=npm&logoColor=white)](https://www.npmjs.com/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![SQLite](https://img.shields.io/badge/SQLite-Embedded-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+<p align="center">
+  <a href="https://nodejs.org/"><img alt="Node.js" src="https://img.shields.io/badge/Node.js-22%2B-3C873A?logo=node.js&logoColor=white"></a>
+  <a href="https://www.npmjs.com/"><img alt="npm" src="https://img.shields.io/badge/npm-10%2B-CB0000?logo=npm&logoColor=white"></a>
+  <a href="https://www.docker.com/"><img alt="Docker Compose" src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white"></a>
+  <a href="https://www.sqlite.org/"><img alt="SQLite" src="https://img.shields.io/badge/SQLite-Embedded-003B57?logo=sqlite&logoColor=white"></a>
+  <img alt="Tests" src="https://img.shields.io/badge/Tests-33%20passing-34D058?logo=jest&logoColor=white">
+</p>
 
 ---
 
 ## ✨ Highlights
 
-- Lean, fast Node.js API (CommonJS)
-- Lightweight persistence using SQLite
-- Reproducible environment via Docker Compose
-- Bulk task import through CSV file upload
-- Health and observability: `/health` endpoint
-- Clean structure, ready for testing
-- Jest + Supertest test suite covering validations and all `/tasks` endpoints
+- ⚡ Fast and minimal Node.js API (CommonJS)
+- 🗄️ Lightweight persistence with SQLite
+- 🐳 Reproducible environment via Docker Compose
+- 📥 Bulk import of tasks via CSV upload (multipart/form-data)
+- ✅ 33 tests (unit + integration) with Jest + Supertest
+- 🧱 Clean structure and clear validation rules
 
 ---
 
-## 📁 Project Structure
+## 🗂️ Project Structure
 
 ```text
 .
 ├─ src/
-│  ├─ server.js         # HTTP entrypoint (starts app.listen)
-│  ├─ app.js            # Express app (imported by server)
-│  ├─ routes/           # Route definitions
-│  ├─ controllers/      # Business orchestration
-│  ├─ repositories/     # Database access (SQLite)
-│  └─ database/
-│     ├─ db.js          # SQLite connection + schema bootstrap
-│     └─ init.sql       # Schema
+│  ├─ controllers/
+│  │  └─ tasksController.js    # Task CRUD, toggle completion, CSV import
+│  ├─ middlewares/
+│  │  └─ upload.js             # Multer config (5MB limit, CSV validation)
+│  └─ routes/
+│     └─ tasks.js              # Routes for /tasks and /tasks/import
+│  ├─ controllers/
+│  │  └─ tasksController.js    # Task CRUD, toggle completion, CSV import
+│  ├─ middlewares/
+│  │  └─ upload.js             # Multer config (5MB limit, CSV validation)
+│  └─ routes/
+│     └─ tasks.js              # Routes for /tasks and /tasks/import
 ├─ tests/
 │  ├─ unit/
 │  │  └─ tasksController.spec.js
 │  └─ integration/
 │     └─ tasks.integration.spec.js
-├─ jest.config.cjs      # Jest config (Node, sequential)
 ├─ docker-compose.yml
 ├─ Dockerfile
+├─ postman_collection.json
+├─ sample-tasks.csv
+├─ postman_collection.json
+├─ sample-tasks.csv
 └─ README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ Getting Started
 
 ### Prerequisites
 - Node.js 22+
 - npm 10+
 - Docker Engine with Compose plugin
 
-### Local environment (without Docker)
+### Run locally (without Docker)
 
 ```bash
 npm install
@@ -63,8 +72,8 @@ npm run dev
 # Service available at http://localhost:3000
 ```
 
-- Readiness probe: `GET /health` → `{ "status": "ok", "uptime": <number> }`
-- Set `SQLITE_DB_FILE` to change the database path (default: `/app/data/database.sqlite`)
+Tip:
+- Customize DB path via `SQLITE_DB_FILE` (default: `/app/data/database.sqlite`)
 
 ### Run with Docker
 
@@ -74,13 +83,13 @@ docker compose up --build
 docker compose down
 ```
 
-Volumes:
+Mounted volumes:
 - `./src` → `/app/src`
 - `./data` → `/app/data`
 
 ---
 
-## 🔒 Environment Variables
+## 🔐 Environment Variables
 
 ```env
 # SQLite file path (inside the container)
@@ -91,29 +100,34 @@ PORT=3000
 
 ---
 
-## 📚 API
+## 📚 API Reference
 
 Base URL: `http://localhost:3000`
 
-### Health Check
-- GET `/health`
-- 200 OK
-```json
-{ "status": "ok", "uptime": 123.456 }
-```
+### Endpoints Overview
 
-### Tasks
+| Method | Path                       | Purpose                             |
+|-------:|----------------------------|-------------------------------------|
+| POST   | /tasks                     | Create a new task                   |
+| GET    | /tasks                     | List all tasks                      |
+| GET    | /tasks?search=term         | Filter tasks by title/description   |
+| PUT    | /tasks/:id                 | Update title and/or description     |
+| PATCH  | /tasks/:id/complete        | Toggle completion                   |
+| DELETE | /tasks/:id                 | Delete a task                       |
+| POST   | /tasks/import              | Bulk import via CSV upload          |
 
-#### Create Task
-- POST `/tasks`
-- Body:
+---
+
+### Create Task
+Request
 ```json
 {
   "title": "Task title",
   "description": "Task description (optional)"
 }
 ```
-- 201 Created:
+
+Response 201
 ```json
 {
   "id": "uuid",
@@ -124,15 +138,18 @@ Base URL: `http://localhost:3000`
   "updated_at": "2025-12-03 23:00:00"
 }
 ```
-Validations:
-- `title` is required and non-empty
+
+Validations
+- `title` is required and non-empty (trimmed)
 - `description` is optional
 
-#### List Tasks
-- GET `/tasks`
-- Query:
-  - `search` (optional) — filters by title/description
-- 200 OK:
+---
+
+### List Tasks
+Query
+- `search` (optional) — filters by title/description
+
+Response 200
 ```json
 [
   {
@@ -146,16 +163,18 @@ Validations:
 ]
 ```
 
-#### Update Task
-- PUT `/tasks/:id`
-- Body:
+---
+
+### Update Task
+Request
 ```json
 {
   "title": "New title (optional)",
   "description": "New description (optional)"
 }
 ```
-- 200 OK:
+
+Response 200
 ```json
 {
   "id": "uuid",
@@ -166,13 +185,15 @@ Validations:
   "updated_at": "2025-12-03 23:01:00"
 }
 ```
-Validations:
+
+Validations
 - Provide at least one field (`title` or `description`)
 - 404 Not Found if task does not exist
 
-#### Toggle Completion
-- PATCH `/tasks/:id/complete`
-- 200 OK (example completed):
+---
+
+### Toggle Completion
+Response 200 (example completed)
 ```json
 {
   "id": "uuid",
@@ -183,51 +204,80 @@ Validations:
   "updated_at": "2025-12-03 23:02:00"
 }
 ```
-Behavior:
+
+Behavior
 - If incomplete → marks as complete (`completed_at` = current timestamp)
 - If complete → toggles back to incomplete (`completed_at` = `null`)
 - 404 Not Found if task does not exist
 
-#### Delete Task
-- DELETE `/tasks/:id`
-- 204 No Content
+---
+
+### Delete Task
+- Response: 204 No Content
 - 404 Not Found if task does not exist
+
+---
+
+### Import Tasks from CSV
+Format
+- `multipart/form-data` with field name `file`
+- CSV columns: `title`, `description`
+- Header row required
+- Maximum file size: 5MB
+- Supported mimetypes: `text/csv`, `application/csv`
+
+Response 200 (example)
+```json
+{
+  "imported": 10,
+  "totalLines": 12,
+  "failed": 2,
+  "errors": [
+    { "line": 5, "error": "title is required" },
+    { "line": 8, "error": "title is required" }
+    { "line": 5, "error": "title is required" },
+    { "line": 8, "error": "title is required" }
+  ]
+}
+```
+
+Example CSV (`sample-tasks.csv`)
+```csv
+title,description
+Learn Node.js,Study fundamentals and best practices
+Build REST API,Create a task management API
+Write tests,Add unit and integration tests
+Deploy to Docker,Containerize the application
+```
+
+Curl
+```bash
+curl -X POST http://localhost:3000/tasks/import \
+  -F "file=@sample-tasks.csv"
+  -F "file=@sample-tasks.csv"
+```
+
+Behavior
+- Each valid row creates a task
+- Rows with missing or empty title are skipped and reported in errors
+- Processing continues even if individual rows fail
+- Returns statistics: imported count, total lines, failed count, and per-line errors
 
 ---
 
 ## 🧪 Testing
 
-The project includes 30 tests (unit + integration) using Jest and Supertest. Tests run sequentially to avoid SQLite concurrency issues.
+33 tests (unit + integration) using Jest and Supertest. Tests run sequentially to avoid SQLite concurrency issues.
 
-- Frameworks:
-  - Jest (unit and integration)
-  - Supertest (HTTP integration)
+- Unit: `tests/unit/tasksController.spec.js`
+- Integration: `tests/integration/tasks.integration.spec.js`
 
-- Test files:
-  - Unit: `tests/unit/tasksController.spec.js`
-    - Validates title requirement (trim, non-empty)
-    - Validates update body must contain `title` or `description`
-    - Simulates `completed_at` toggle behavior
-  - Integration: `tests/integration/tasks.integration.spec.js`
-    - Covers endpoints: POST, GET (with `?search`), PUT, PATCH `/complete`, DELETE
-    - Error cases: 400 (invalid body), 404 (not found)
-
-- How tests work:
-  - If `src/app.js` exports the Express app, Supertest uses it directly.
-  - If not, tests fallback to `http://localhost:3000`. In this case, start the dev server before running tests.
-
-### Run tests locally (recommended: isolated DB)
-
-Use an isolated SQLite file via env var to ensure clean state per run:
-
+Run locally (isolated DB)
 ```bash
 SQLITE_DB_FILE=/tmp/test-database.sqlite NODE_ENV=test npm test
 ```
 
-This sets the database file to `/tmp/test-database.sqlite` only for the test process. No repo files are created.
-
-### Run tests with Docker Compose (optional)
-
+Run with Docker
 ```bash
 docker compose run --rm \
   -e NODE_ENV=test \
@@ -235,33 +285,27 @@ docker compose run --rm \
   api npm test
 ```
 
-### Notes
-
-- Tests execute sequentially (`jest --runInBand` / `maxWorkers: 1`) to avoid sqlite contention.
-- If an intermittent failure appears due to sqlite locks, ensure the isolated DB path is used and re-run.
+Note
+- Tests execute sequentially (`jest --runInBand` / `maxWorkers: 1`)
 
 ---
 
-## 📦 CSV Import
+## 📮 Postman Collection
 
-- Dedicated endpoint (e.g., `POST /tasks/import`) for `.csv` file upload
-- Processes tasks in batch with resilience
-- Validates structure and per-row data
-- Produces success/error report
+Import `postman_collection.json` into Postman to quickly test:
+- CRUD operations
+- CSV import (multipart/form-data)
 
-> Note: This is part of the challenge scope; adjust names/routes according to your implementation.
+Pro tip: In “Create Task”, set a collection variable for `taskId` and reuse it in Update/Toggle/Delete:
+```js
+pm.collectionVariables.set("taskId", pm.response.json().id);
+```
 
 ---
 
 ## 🛠️ Useful Commands
 
 ```bash
-# Lint
-npm run lint
-
-# Format
-npm run format
-
 # Dev (hot reload)
 npm run dev
 
@@ -271,26 +315,9 @@ SQLITE_DB_FILE=/tmp/test-database.sqlite NODE_ENV=test npm test
 
 ---
 
-## 🗺️ Roadmap
-
-- [ ] Integration and contract tests (extended coverage, CI)
-- [ ] Rate limiting and configurable CORS
-- [ ] Observability (structured logs, Prometheus metrics)
-- [ ] OpenAPI/Swagger documentation
-- [ ] Optional authentication (tokens, roles)
-
----
-
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a branch: `feat/my-feature`
 3. Commit: `feat: objective description`
 4. Open a PR with context and evidence
-
----
-
-## 🔗 Extras
-
-- Languages: 98.6% JavaScript · 1.4% Dockerfile
-- Repository description: “Node.js API with Docker to manage tasks. Features: CRUD operations, mark tasks as complete, and bulk import via CSV file upload.
