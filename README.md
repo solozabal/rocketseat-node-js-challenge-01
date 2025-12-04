@@ -193,11 +193,59 @@ Behavior:
 - 204 No Content
 - 404 Not Found if task does not exist
 
+#### Import Tasks from CSV
+- POST `/tasks/import`
+- Body: `multipart/form-data` with field name `file`
+- CSV format:
+  - Columns: `title`, `description`
+  - Header row required
+  - Maximum file size: 5MB
+  - Supported mimetypes: `text/csv`, `application/csv`
+- 200 OK:
+```json
+{
+  "imported": 10,
+  "totalLines": 12,
+  "failed": 2,
+  "errors": [
+    {
+      "line": 5,
+      "error": "title is required"
+    },
+    {
+      "line": 8,
+      "error": "title is required"
+    }
+  ]
+}
+```
+
+Example CSV file (`tasks.csv`):
+```csv
+title,description
+Learn Node.js,Study fundamentals and best practices
+Build REST API,Create a task management API
+Write tests,Add unit and integration tests
+Deploy to Docker,Containerize the application
+```
+
+Example with curl:
+```bash
+curl -X POST http://localhost:3000/tasks/import \
+  -F "file=@tasks.csv"
+```
+
+Behavior:
+- Each valid row creates a task
+- Rows with missing or empty title are skipped and reported in errors
+- Processing continues even if individual rows fail
+- Returns statistics: imported count, total lines, failed count, and per-line errors
+
 ---
 
 ## 🧪 Testing
 
-The project includes 30 tests (unit + integration) using Jest and Supertest. Tests run sequentially to avoid SQLite concurrency issues.
+The project includes 33 tests (unit + integration) using Jest and Supertest. Tests run sequentially to avoid SQLite concurrency issues.
 
 - Frameworks:
   - Jest (unit and integration)
@@ -209,8 +257,9 @@ The project includes 30 tests (unit + integration) using Jest and Supertest. Tes
     - Validates update body must contain `title` or `description`
     - Simulates `completed_at` toggle behavior
   - Integration: `tests/integration/tasks.integration.spec.js`
-    - Covers endpoints: POST, GET (with `?search`), PUT, PATCH `/complete`, DELETE
+    - Covers endpoints: POST, GET (with `?search`), PUT, PATCH `/complete`, DELETE, POST `/import`
     - Error cases: 400 (invalid body), 404 (not found)
+    - CSV import validation and statistics
 
 - How tests work:
   - If `src/app.js` exports the Express app, Supertest uses it directly.
@@ -242,14 +291,14 @@ docker compose run --rm \
 
 ---
 
-## 📦 CSV Import
+## 📮 Postman Collection
 
-- Dedicated endpoint (e.g., `POST /tasks/import`) for `.csv` file upload
-- Processes tasks in batch with resilience
-- Validates structure and per-row data
-- Produces success/error report
+A Postman collection is included in the repository: `postman_collection.json`
 
-> Note: This is part of the challenge scope; adjust names/routes according to your implementation.
+Import it into Postman to quickly test all API endpoints, including:
+- Health check
+- CRUD operations for tasks
+- CSV import with multipart/form-data
 
 ---
 

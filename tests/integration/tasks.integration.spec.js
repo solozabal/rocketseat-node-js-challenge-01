@@ -311,4 +311,55 @@ describe('Tasks Integration Tests', () => {
       expect(response.body).toEqual({ error: 'task not found' });
     });
   });
+
+  describe('POST /tasks/import', () => {
+    it('should import tasks from CSV and return statistics', async () => {
+      const csvContent = 'title,description\nTask 1,Description 1\nTask 2,Description 2';
+      
+      const response = await api
+        .post('/tasks/import')
+        .attach('file', Buffer.from(csvContent), 'tasks.csv')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        imported: 2,
+        totalLines: 2,
+        failed: 0,
+        errors: []
+      });
+
+      // Verify tasks were created
+      const tasksResponse = await api.get('/tasks').expect(200);
+      expect(tasksResponse.body.length).toBe(2);
+    });
+
+    it('should handle CSV with missing title and return error statistics', async () => {
+      const csvContent = 'title,description\nTask 1,Description 1\n,Description without title\nTask 3,Description 3';
+      
+      const response = await api
+        .post('/tasks/import')
+        .attach('file', Buffer.from(csvContent), 'tasks.csv')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        imported: 2,
+        totalLines: 3,
+        failed: 1,
+        errors: [
+          {
+            line: 3,
+            error: 'title is required'
+          }
+        ]
+      });
+    });
+
+    it('should return 400 when no file is provided', async () => {
+      const response = await api
+        .post('/tasks/import')
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'file is required' });
+    });
+  });
 });

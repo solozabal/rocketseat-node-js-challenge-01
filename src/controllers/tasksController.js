@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const db = require('../database/db');
+const { parse } = require('csv-parse');
 
 function trimString(value) {
   return typeof value === 'string' ? value.trim() : value;
@@ -115,10 +116,92 @@ async function toggleComplete(req, res) {
   }
 }
 
+async function importTasks(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'file is required' });
+    }
+
+    const fileBuffer = req.file.buffer;
+    const stats = {
+      imported: 0,
+      totalLines: 0,
+      failed: 0,
+      errors: []
+    };
+
+    return new Promise((resolve) => {
+      const records = [];
+      const parser = parse(fileBuffer, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        relaxColumnCount: true
+      });
+
+      parser.on('readable', function() {
+        let record;
+        while ((record = parser.read()) !== null) {
+          records.push(record);
+        }
+      });
+
+      parser.on('error', function(err) {
+        console.error('CSV parse error', err.message);
+        resolve(res.status(400).json({ error: 'invalid CSV format' }));
+      });
+
+      parser.on('end', async function() {
+        stats.totalLines = records.length;
+
+        for (let i = 0; i < records.length; i++) {
+          const lineNumber = i + 2; // +2 because line 1 is header, and we start at index 0
+          const record = records[i];
+
+          try {
+            const title = trimString(record.title);
+            const description = trimString(record.description);
+
+            if (!title) {
+              stats.failed++;
+              stats.errors.push({
+                line: lineNumber,
+                error: 'title is required'
+              });
+              continue;
+            }
+
+            const id = crypto.randomUUID();
+            await db.run(
+              `INSERT INTO tasks (id, title, description, completed_at, created_at, updated_at)
+               VALUES (?, ?, ?, NULL, datetime('now'), datetime('now'))`,
+              [id, title, description || null]
+            );
+
+            stats.imported++;
+          } catch (error) {
+            stats.failed++;
+            stats.errors.push({
+              line: lineNumber,
+              error: error.message
+            });
+          }
+        }
+
+        resolve(res.status(200).json(stats));
+      });
+    });
+  } catch (error) {
+    console.error('importTasks error', error.message);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+
 module.exports = {
   createTask,
   getTasks,
   updateTask,
   deleteTask,
-  toggleComplete
+  toggleComplete,
+  importTasks
 };
