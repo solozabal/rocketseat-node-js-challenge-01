@@ -321,3 +321,17 @@ SQLITE_DB_FILE=/tmp/test-database.sqlite NODE_ENV=test npm test
 2. Create a branch: `feat/my-feature`
 3. Commit: `feat: objective description`
 4. Open a PR with context and evidence
+
+---
+
+## 💡 License
+
+This project is licensed under the MIT License.
+
+---
+
+<p align="center">
+  <a href="https://www.linkedin.com/in/pedrosolozabal/">
+    <img src="https://img.shields.io/badge/Pedro%20Solozabal-LinkedIn-blue?logo=linkedin&logoColor=white&style=for-the-badge" alt="Pedro Solozabal on LinkedIn">
+  </a>
+</p>
