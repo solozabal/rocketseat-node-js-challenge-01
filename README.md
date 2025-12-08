@@ -324,9 +324,9 @@ SQLITE_DB_FILE=/tmp/test-database.sqlite NODE_ENV=test npm test
 
 ---
 
-## 💡 License
+## 📄 License
 
-This project is licensed under the MIT License.
+Licensed under the [MIT License](LICENSE).
 
 ---
 
